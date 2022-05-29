@@ -1,6 +1,6 @@
 {
   "short_name": "Github Repo Explorer",
-  "name": "Sample Application to explore repositories of different users",
+  "name": "React Application to explore repositories of different users",
   "icons": [
     {
       "src": "favicon.ico",

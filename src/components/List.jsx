@@ -1,11 +1,11 @@
 import React from 'react'
 import { useDispatch,useSelector } from 'react-redux'
 import styled from "styled-components";
-import { getRepositories } from '../features/repository';
+import { getRepositories, loadRepositories } from '../features/repository';
 
 import RepoItem from './RepoItem';
 
-const ListContainer = styled.div`
+export const ListContainer = styled.div`
   flex: 0.75;
   display: flex;
   flex-wrap: wrap;
@@ -17,7 +17,7 @@ const ListContainer = styled.div`
 `;
 
 
-const ItemContainer = styled.div`
+export const ItemContainer = styled.div`
   width: 50%;
   box-sizing: border-box;
   padding: 10px;
@@ -33,21 +33,21 @@ const ItemContainer = styled.div`
   }
 `;
 
-const ImgContainer = styled.div`
+export const ImgContainer = styled.div`
   flex: 0.2;
 `;
 
-const Img = styled.img`
+export const Img = styled.img`
   object-fit: contain;
   height: 60px;
 `;
 
-const InfoContainer = styled.div`
+export const InfoContainer = styled.div`
   flex: 0.8;
   font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
 `;
 
-const InfoName = styled.div`
+export const InfoName = styled.div`
   text-decoration: none;
   color: #0076ce;
   font-size: 24px;
@@ -60,32 +60,47 @@ const List = () => {
 
   const dispatch=useDispatch();
 
-  const { repos, userFollwers, listViewType } = useSelector(
+  const { repos, userFollowers, listViewType, searchedUsersDict } = useSelector(
     (state) => state.repository
   );
 
   return (
     <ListContainer>
-      {listViewType === "repository" &&
-        repos.map((repo) => <RepoItem key={repo.node_id} repo={repo} />)}
+      {listViewType === "repository" && (
+        <>
+          {repos.length ? (
+            <>
+              {repos.map((repo) => (
+                <RepoItem key={repo.node_id} repo={repo} />
+              ))}
+            </>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center" }}>
+              Please enter a valid username in the Search bar at the top.
+            </div>
+          )}
+        </>
+      )}
       {listViewType === "followers" &&
-        userFollwers.map((follower) => (
+        userFollowers.map((follower) => (
           <ItemContainer key={follower.id}>
-            <InfoContainer>
-              <InfoName
-                onClick={() => {
-                  dispatch(getRepositories({ searchTerm: follower.login }));
-                }}
-              >
-                {follower.login}
-              </InfoName>
-            </InfoContainer>
             <ImgContainer>
               <Img
                 src={follower.avatar_url}
                 alt={`avatar_${follower.node_id}`}
               />
             </ImgContainer>
+            <InfoContainer
+              onClick={() => {
+                if (searchedUsersDict?.[follower.login]) {
+                  dispatch(loadRepositories(searchedUsersDict[follower.login]));
+                } else {
+                  dispatch(getRepositories({ searchTerm: follower.login }));
+                }
+              }}
+            >
+              <InfoName>{follower.login}</InfoName>
+            </InfoContainer>
           </ItemContainer>
         ))}
     </ListContainer>

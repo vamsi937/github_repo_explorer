@@ -1,7 +1,8 @@
 import React,{useState,useRef} from 'react'
 import { useDispatch, useSelector } from 'react-redux';
-import { getRepositories, loadRepositories } from "../features/repository";
+import { getRepositories, loadRepositories, goToHomePage } from "../features/repository";
 import styled from "styled-components";
+import { ToastContainer, toast } from "react-toastify";
 
 const SearchContainer=styled.div`
     display: flex;
@@ -15,6 +16,7 @@ const SearchContainer=styled.div`
 const ApplicationName=styled.div`
   font-weight: bold;
   margin-left: 20px;
+  cursor: pointer;
 `;
 
 const UsernameInput=styled.input`
@@ -39,47 +41,73 @@ const SearchUser = () => {
   const inputRef=useRef(null);
   const {searchedUsersDict}=useSelector(state=>state.repository);
 
-  const debouncedSearch=(cb,delay=500)=>{
-    let timeout;
-    return (...args)=>{
-        clearTimeout(timeout);
-        timeout = setTimeout(()=>{
-            cb(...args);
-        },delay);
-    }
-  }
+  // const debouncedSearch=(cb,delay=500)=>{
+  //   let timeout;
+  //   return (...args)=>{
+  //       clearTimeout(timeout);
+  //       timeout = setTimeout(()=>{
+  //           cb(...args);
+  //       },delay);
+  //   }
+  // }
 
-  const searchHelper=debouncedSearch((text)=>{
-      setSearch(text);
-  });
+  // const searchHelper=debouncedSearch((text)=>{
+  //     setSearch(text);
+  // });
 
   const searchHandler=()=>{
-    if(searchedUsersDict[search]){
-      dispatch(loadRepositories(searchedUsersDict[search]));
+    if(search.trim().length===0){
+     toast.error("You cannot have an empty username!", {
+       position: "top-right",
+       autoClose: 5000,
+       hideProgressBar: false,
+       closeOnClick: true,
+       pauseOnHover: true,
+       draggable: true,
+       progress: undefined,
+     });
+      return;
     }else{
-      dispatch(getRepositories({ searchTerm: search }));
+      if (searchedUsersDict[search]) {
+        dispatch(loadRepositories(searchedUsersDict[search]));
+      } else {
+        dispatch(getRepositories({ searchTerm: search }));
+      }
+      setSearch("");
+      inputRef.current.value = "";
     }
-    setSearch("");
-    inputRef.current.value="";
   }
 
   return (
-    <SearchContainer>
-      <ApplicationName>
-        <i class="fab fa-github"></i> Repo Explorer
-      </ApplicationName>
-      <div>
-        <UsernameInput
-          placeholder="Enter Username...."
-          type="text"
-          onChange={(e) => searchHelper(e.target.value)}
-          ref={inputRef}
-        />
-        <SearchButton onClick={searchHandler}>
-          <i class="fas fa-search"></i>
-        </SearchButton>
-      </div>
-    </SearchContainer>
+    <>
+      <SearchContainer>
+        <ApplicationName onClick={()=>{
+          dispatch(goToHomePage())
+        }}>
+          <i class="fab fa-github"></i> Repo Explorer
+        </ApplicationName>
+        <div>
+          <UsernameInput
+            placeholder="Enter Username"
+            type="text"
+            onChange={(e) => {
+                setSearch(e.target.value);
+            }}
+            onKeyDown={(e)=>{
+              if(e.keyCode===13){
+                searchHandler();
+              }
+            }}
+            value={search}
+            ref={inputRef}
+          />
+          <SearchButton onClick={searchHandler}>
+            <i class="fas fa-search"></i>
+          </SearchButton>
+        </div>
+      </SearchContainer>
+      <ToastContainer />
+    </>
   );
 }
 

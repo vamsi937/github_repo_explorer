@@ -2,14 +2,15 @@ import React,{useState,useEffect} from 'react'
 import {useDispatch,useSelector} from 'react-redux'
 import styled from "styled-components";
 
-import { getUserFollowers, loadFollowers } from "../features/repository";
+import { getUserFollowers, loadFollowers, viewRepoList } from "../features/repository";
 
-const UserInfoContainer=styled.div`
-    flex: 0.25;
-    display: flex;
-    justify-content: center;
-    text-align: center;
-    padding-top:5vh;
+const UserInfoContainer = styled.div`
+  flex: ${(props) => (props.showRepoDescription ? 0 : 0.25)};
+  display: ${(props) => (props.showRepoDescription ? "none" : "flex")};
+  justify-content: center;
+  text-align: center;
+  padding-top: 5vh;
+  border-right: 0.5px solid #eee;
 `;
 
 const UserAvatarImg=styled.img`
@@ -56,17 +57,21 @@ const UserInfo = () => {
 
   const [fetchedUserDetails,setFetchedUserDetails]=useState(null);
 
-  const { userDetails: userInfo, followersDict } = useSelector(
-    (state) => state.repository
-  );
+  const {
+    userDetails: userInfo,
+    followersDict,
+    listViewType,
+    showRepoDescription,
+  } = useSelector((state) => state.repository);
   const dispatch=useDispatch();
 
   useEffect(()=>{
     if(userInfo){
+        console.log(userInfo);
         fetchUserDetailsHelper(userInfo.login);
     }
   },[userInfo])
-
+  
   const fetchUserDetailsHelper = async (username) => {
     await fetch(`https://api.github.com/users/${username}`)
       .then((res) => res.json())
@@ -78,38 +83,55 @@ const UserInfo = () => {
   };
 
   const showUserFollowers=async ()=>{
-    if(followersDict?.[fetchedUserDetails?.login]){
-      dispatch(loadFollowers(followersDict?.[fetchedUserDetails?.login]));
+    if(followersDict?.[userInfo?.login]){
+      dispatch(loadFollowers(followersDict?.[userInfo?.login]));
     }else{
       dispatch(getUserFollowers({ userName: userInfo.login }));
     }
   }
 
+  const moveBackToRepoList=()=>{
+    dispatch(viewRepoList());
+  }
+
   return (
-    <UserInfoContainer style={{ flex: 0.25 }}>
+    <UserInfoContainer showRepoDescription={showRepoDescription}>
       {userInfo && fetchedUserDetails ? (
-        <div style={{position:"relative"}}>
-          <UserAvatarImg
-            src={userInfo.avatar_url}
-            alt="avatar"
-          />
+        <div style={{ position: "relative" }}>
+          <UserAvatarImg src={userInfo.avatar_url} alt="avatar" />
           <UserDetailsHeader>
             <ProfileName>{fetchedUserDetails.name}</ProfileName>
             <ProfileUserName href={userInfo.html_url} target="_blank">
               {userInfo.login} <i class="fas fa-link"></i>
             </ProfileUserName>
           </UserDetailsHeader>
-          <FollowDetailsButton onClick={showUserFollowers}>
-            <i class="fas fa-user" style={{ margin: "0 10px" }}></i>
-            {fetchedUserDetails?.followers} Followers{" "}
+          <FollowDetailsButton
+            onClick={
+              listViewType === "repository"
+                ? showUserFollowers
+                : moveBackToRepoList
+            }
+          >
+            {listViewType === "repository" ? (
+              <>
+                <i className="fas fa-user"></i>
+                View {fetchedUserDetails?.followers} Followers{" "}
+              </>
+            ) : (
+              <>
+                <i className="fas fa-arrow-left"></i>
+                Back to Repos
+              </>
+            )}
           </FollowDetailsButton>
-          <div style={{ position:"absolute" ,bottom:"10px",left: "50px"}}>
-            Joined on{" "}
-            {new Date(fetchedUserDetails?.created_at).toDateString()}
+          <div style={{ position: "absolute", bottom: "10px", left: "50px" }}>
+            Joined on {new Date(fetchedUserDetails?.created_at).toDateString()}
           </div>
         </div>
       ) : (
-        ""
+       <div style={{textAlign:"center",display:"flex",alignItems:"center"}}>
+         <h3>Welcome to the Github Repo Explorer</h3>
+       </div>
       )}
     </UserInfoContainer>
   );
